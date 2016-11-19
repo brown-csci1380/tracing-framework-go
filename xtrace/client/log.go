@@ -25,9 +25,13 @@ func Connect(server string) error {
 var topic = []byte("xtrace")
 var processName = strings.Join(os.Args, " ")
 
-// Log logs the given message. Log must not be
-// called before Connect has been called successfully.
-func Log(str string) {
+func SetProcessName(pname string) {
+	processName = pname
+}
+
+// Log a given message with the extra preceding events given
+// adds a ParentEventId for all precedingEvents _in addition_ to the recorded parent of this event
+func LogRedundancies(str string, precedingEvents ...int64) {
 	if client == nil {
 		panic("xtrace/client.Log: no connection to server")
 	}
@@ -37,7 +41,10 @@ func Log(str string) {
 
 	report.TaskId = new(int64)
 	*report.TaskId = GetTaskID()
-	report.ParentEventId = []int64{parent}
+	if GetTaskID() <= 0 {
+		return
+	}
+	report.ParentEventId = append(precedingEvents, parent)
 	report.EventId = new(int64)
 	*report.EventId = event
 	report.Label = new(string)
@@ -56,6 +63,11 @@ func Log(str string) {
 		*report.Host = host
 	}
 
+	// report.ThreadName = new(string)
+	// *report.ThreadName = "Thread name"
+	report.Agent = new(string)
+	*report.Agent = str
+
 	buf, err := proto.Marshal(&report)
 	if err != nil {
 		panic(fmt.Errorf("internal error: %v", err))
@@ -67,4 +79,14 @@ func Log(str string) {
 	// so that the program can block before it quits, but each
 	// call to Log is not blocking.
 	client.PublishBlock(topic, buf)
+}
+
+// Log logs the given message. Log must not be
+// called before Connect has been called successfully.
+func Log(str string) {
+	LogRedundancies(str, PopRedundancies()...)
+}
+
+func Logf(format string, args ...interface{}) {
+	Log(fmt.Sprintf(format, args...))
 }
