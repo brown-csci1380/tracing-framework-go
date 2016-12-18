@@ -20,7 +20,7 @@ import (
 const (
 	fileSuffix = "_local.go"
 	buildTag   = "local"
-	filePrefix = "_"
+	filePrefix = "x_"
 )
 
 func main() {
