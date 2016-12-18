@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -12,6 +13,8 @@ import (
 )
 
 var client *pubsub.Client
+
+var defaultLogLocation *log.Logger
 
 // Connect initializes a connection to the X-Trace
 // server. Connect must be called (and must complete
@@ -25,6 +28,10 @@ func Connect(server string) error {
 var topic = []byte("xtrace")
 var processName = strings.Join(os.Args, " ")
 
+func SetFallbackLogger(l *log.Logger) {
+	defaultLogLocation = l
+}
+
 func SetProcessName(pname string) {
 	processName = pname
 }
@@ -33,7 +40,12 @@ func SetProcessName(pname string) {
 // adds a ParentEventId for all precedingEvents _in addition_ to the recorded parent of this event
 func LogRedundancies(str string, precedingEvents ...int64) {
 	if client == nil {
-		panic("xtrace/client.Log: no connection to server")
+		if defaultLogLocation != nil {
+			// if given a default location, log to there
+			defaultLogLocation.Println("xtrace (task:", GetTaskID(), "): Logged with no connection:", str, "events:", precedingEvents)
+		}
+		//else fail silently
+		return
 	}
 
 	parent, event := newEvent()
@@ -70,7 +82,7 @@ func LogRedundancies(str string, precedingEvents ...int64) {
 
 	buf, err := proto.Marshal(&report)
 	if err != nil {
-		panic(fmt.Errorf("internal error: %v", err))
+		fmt.Fprintf(os.Stderr, "internal error: %v", err)
 	}
 
 	// NOTE(joshlf): Currently, Log blocks until the log message
