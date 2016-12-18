@@ -14,6 +14,8 @@ import (
 	"golang.org/x/tools/go/ast/astutil"
 )
 
+var localImportName = "__local"
+
 func rewriteGos(fset *token.FileSet, info types.Info, qual types.Qualifier, f *ast.File) (changed bool, err error) {
 	rname := runtimeName(f)
 	err = mapStmts(f, func(s ast.Stmt) ([]ast.Stmt, error) {
@@ -28,7 +30,7 @@ func rewriteGos(fset *token.FileSet, info types.Info, qual types.Qualifier, f *a
 	})
 	if changed {
 		// astutil.AddNamedImport(fset, f, rname, "runtime")
-		astutil.AddImport(fset, f, "github.com/brownsys/tracing-framework-go/local")
+		astutil.AddNamedImport(fset, f, localImportName, "github.com/brownsys/tracing-framework-go/local")
 		// astutil.AddImport(fset, f, "runtime")
 	}
 	return changed, err
@@ -126,12 +128,14 @@ func rewriteGoStmt(fset *token.FileSet, info types.Info, qual types.Qualifier, r
 		Runtime                       string
 		Func                          string
 		Typ                           string
+		Imp                           string
 		DefArgs, InnerArgs, OuterArgs []string
 	}
 
 	arg.Runtime = rname
 	arg.Func = nodeString(fset, g.Call.Fun)
 	arg.Typ = types.TypeString(ftyp, qual)
+	arg.Imp = localImportName
 
 	params := sig.Params()
 	for i := 0; i < params.Len(); i++ {
@@ -168,7 +172,7 @@ var goTmpl = template.Must(template.New("").Parse(`
 go func(__f1 func(), __f2 {{.Typ}} {{range .DefArgs}},{{.}}{{end}}){
 	__f1()
 	__f2({{range .InnerArgs}}{{.}},{{end}})
-}(local.GetSpawnCallback(), {{.Func}}{{range .OuterArgs}},{{.}}{{end}})
+}({{.Imp}}.GetSpawnCallback(), {{.Func}}{{range .OuterArgs}},{{.}}{{end}})
 `))
 
 func parseStmts(src string) []ast.Stmt {

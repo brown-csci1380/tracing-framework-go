@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/tools/go/loader"
 )
@@ -18,6 +19,7 @@ import (
 const (
 	fileSuffix = "_local.go"
 	buildTag   = "local"
+	filePrefix = "_"
 )
 
 func main() {
@@ -35,7 +37,22 @@ func main() {
 
 func packageDir(dir string) {
 	var conf loader.Config
-	conf.Import(dir)
+	files := []string{}
+
+	infos, err := ioutil.ReadDir(dir)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "could not load directory: ", err)
+		os.Exit(1)
+	}
+
+	for _, inf := range infos {
+		if !inf.IsDir() && strings.HasSuffix(inf.Name(), ".go") && !strings.HasSuffix(inf.Name(), "_local.go") {
+			fmt.Println(inf.Name())
+			files = append(files, filepath.Join(dir, inf.Name()))
+		}
+	}
+
+	conf.CreateFromFilenames(dir, files...)
 
 	prog, err := conf.Load()
 	if err != nil {
@@ -122,7 +139,8 @@ func packageDir(dir string) {
 		if err != nil {
 			panic(fmt.Errorf("unexpected internal error: %v", err))
 		}
-		fpath = fpath[:len(fpath)-3] + fileSuffix
+		dir, filename := filepath.Split(fpath)
+		fpath = filepath.Join(dir, filePrefix+filename[:len(filename)-3]+fileSuffix)
 		if err = ioutil.WriteFile(fpath, b, 0664); err != nil {
 			fmt.Fprintf(os.Stderr, "could not create instrument source file: %v\n", err)
 			os.Exit(2)
