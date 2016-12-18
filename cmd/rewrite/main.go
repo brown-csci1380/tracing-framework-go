@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
+	"go/parser"
 	"go/printer"
 	"go/token"
 	"go/types"
@@ -37,6 +38,7 @@ func main() {
 
 func packageDir(dir string) {
 	var conf loader.Config
+	conf.ParserMode = parser.ParseComments
 	files := []string{}
 
 	infos, err := ioutil.ReadDir(dir)
