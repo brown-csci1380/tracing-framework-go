@@ -38,7 +38,7 @@ func SetProcessName(pname string) {
 
 // Log a given message with the extra preceding events given
 // adds a ParentEventId for all precedingEvents _in addition_ to the recorded parent of this event
-func LogRedundancies(str string, precedingEvents ...int64) {
+func LogRedundancies(str string, precedingEvents []int64) {
 	if client == nil {
 		if defaultLogLocation != nil {
 			// if given a default location, log to there
@@ -80,6 +80,11 @@ func LogRedundancies(str string, precedingEvents ...int64) {
 	report.Agent = new(string)
 	*report.Agent = str
 
+	if getLocal().tags != nil {
+		report.Tags = getLocal().tags
+		getLocal().tags = nil
+	}
+
 	buf, err := proto.Marshal(&report)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "internal error: %v", err)
@@ -96,7 +101,7 @@ func LogRedundancies(str string, precedingEvents ...int64) {
 // Log logs the given message. Log must not be
 // called before Connect has been called successfully.
 func Log(str string) {
-	LogRedundancies(str, PopRedundancies()...)
+	LogRedundancies(str, PopRedundancies())
 }
 
 func Logf(format string, args ...interface{}) {

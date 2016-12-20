@@ -13,6 +13,7 @@ type localStorage struct {
 	taskID       int64
 	eventID      int64
 	redundancies []int64
+	tags         []string
 }
 
 // exported type for RPC calls
@@ -89,9 +90,18 @@ func SetTaskID(taskID int64) {
 	getLocal().taskID = taskID
 }
 
-func NewTask() {
+func AddTags(str ...string) {
+	if getLocal().tags == nil {
+		getLocal().tags = str
+	} else {
+		getLocal().tags = append(getLocal().tags, str...)
+	}
+}
+
+func NewTask(tags ...string) {
 	SetTaskID(randInt64())
 	SetEventID(randInt64())
+	AddTags(tags...)
 }
 
 // GetEventID gets the current goroutine's X-Trace Event ID.
