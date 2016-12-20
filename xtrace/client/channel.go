@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -31,7 +30,6 @@ func RegisterChannelReciever(channel interface{}) (ch chan int64) {
 // add it to the local store of redundant edges
 func AddChannelEvent(channel interface{}) {
 	redund := GetChannelSender(channel)
-	fmt.Printf("Found redundancy: %v\n", redund)
 	AddRedundancies(redund...)
 }
 
