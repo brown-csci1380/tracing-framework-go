@@ -5,15 +5,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/brownsys/tracing-framework-go/local"
-	"strconv"
-	"strings"
 )
 
 var token local.Token
-
-const EVENT_KEY = "events"
-const TASK_KEY = "task"
-const MD_KEY = "xtr_metadata"
 
 type localStorage struct {
 	taskID       int64
@@ -73,80 +67,6 @@ func RPCReturned(r RPCMetadata, msg string) {
 	SetTaskID(r.TaskID)
 	AddRedundancies(r.Events...)
 	Log(msg)
-}
-
-func formatIDs(event int64, ids []int64) []string {
-	list := make([]string, len(ids)+1)
-	list[0] = strconv.FormatInt(event, 10)
-	for idx, val := range ids {
-		list[idx+1] = strconv.FormatInt(val, 10)
-	}
-	return list
-}
-
-func getIDs(ids string) []int64 {
-	id_strings := strings.Split(ids, ",")
-	list := make([]int64, len(id_strings))
-	for idx, val := range id_strings {
-		list[idx], _ = strconv.ParseInt(val, 10, 64)
-	}
-	return list
-}
-
-// Returns a slice of strings suitable for passing to grpc/metadata.Pairs
-func GRPCMetadata() []string {
-	l := getLocal()
-	return []string{TASK_KEY, strconv.FormatInt(l.taskID, 10), EVENT_KEY, strings.Join(formatIDs(l.eventID, l.redundancies), ",")}
-}
-
-func GRPCRecieved(md map[string][]string, msg string) {
-	event_strs, ok := md[EVENT_KEY]
-	if !ok || len(event_strs) < 1 {
-		fmt.Printf("bad metadata: %v\n", md)
-		return
-	}
-	events := getIDs(md[EVENT_KEY][0])
-
-	task_strs, ok := md[TASK_KEY]
-	if !ok || len(task_strs) < 1 {
-		fmt.Printf("bad metadata: %v\n", md)
-		return
-	}
-	taskID, err := strconv.ParseInt(task_strs[0], 10, 64)
-	if err != nil {
-		fmt.Printf("bad metadata: %v\n", md)
-		return
-	}
-
-	RPCReceived(RPCMetadata{
-		TaskID: taskID,
-		Events: events,
-	}, msg)
-}
-
-func GRPCReturned(md map[string][]string, msg string) {
-	event_strs, ok := md[EVENT_KEY]
-	if !ok || len(event_strs) < 1 {
-		fmt.Printf("bad metadata: %v\n", md)
-		return
-	}
-	events := getIDs(md[EVENT_KEY][0])
-
-	task_strs, ok := md[TASK_KEY]
-	if !ok || len(task_strs) < 1 {
-		fmt.Printf("bad metadata: %v\n", md)
-		return
-	}
-	taskID, err := strconv.ParseInt(task_strs[0], 10, 64)
-	if err != nil {
-		fmt.Printf("bad metadata: %v\n", md)
-		return
-	}
-
-	RPCReturned(RPCMetadata{
-		TaskID: taskID,
-		Events: events,
-	}, msg)
 }
 
 // SetEventID sets the current goroutine's X-Trace Event ID.
