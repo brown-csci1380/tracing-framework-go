@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"github.com/brownsys/tracing-framework-go/local"
+	"github.com/crotger/tracing-framework-go/local"
 )
 
 var token local.Token

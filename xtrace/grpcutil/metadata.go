@@ -2,7 +2,7 @@ package grpcutil
 
 import (
 	"fmt"
-	"github.com/brownsys/tracing-framework-go/xtrace/client"
+	"github.com/crotger/tracing-framework-go/xtrace/client"
 	"os"
 	"strconv"
 	"strings"
@@ -42,7 +42,6 @@ func GRPCRecieved(md map[string][]string, msg string) {
 		return
 	}
 	events := getIDs(md[EVENT_KEY][0])
-	fmt.Println(events)
 
 	task_strs, ok := md[TASK_KEY]
 	if !ok || len(task_strs) < 1 {
