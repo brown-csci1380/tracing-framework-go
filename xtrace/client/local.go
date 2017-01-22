@@ -101,7 +101,7 @@ func AddTags(str ...string) {
 func NewTask(tags ...string) {
 	SetTaskID(randInt64())
 	SetEventID(randInt64())
-	AddTags(tags...)
+	getLocal().tags = tags
 }
 
 // GetEventID gets the current goroutine's X-Trace Event ID.
