@@ -18,7 +18,11 @@ var XTraceServerInterceptor grpc.UnaryServerInterceptor = func(ctx context.Conte
 
 	GRPCRecieved(md, fmt.Sprintf("Recieved %s, args: %s", info.FullMethod, req))
 	resp, err := handler(ctx, req)
-	xtr.Logf("Returning from %s, err:%v, response: %s", info.FullMethod, err, resp)
+	if err != nil {
+		xtr.Logf("Returning from %s, error: %s", info.FullMethod, err.Error())
+	} else {
+		xtr.Logf("Returning from %s, response: %s", info.FullMethod, resp)
+	}
 	grpc.SetHeader(ctx, metadata.Pairs(GRPCMetadata()...))
 	return resp, err
 }
@@ -28,6 +32,6 @@ var XTraceClientInterceptor grpc.UnaryClientInterceptor = func(ctx context.Conte
 	xtr.Logf("Calling %s, arg: %v", method, req)
 	var md metadata.MD
 	err := invoker(metadata.NewContext(ctx, metadata.Pairs(GRPCMetadata()...)), method, req, reply, cc, append(opts, grpc.Header(&md))...)
-	GRPCReturned(md, fmt.Sprintf("Returned from remote %s, error: %s, value: %v", method, err, reply))
+	GRPCReturned(md, fmt.Sprintf("Returned from remote %s, error: %s, value: %v", method, err.Error(), reply))
 	return err
 }

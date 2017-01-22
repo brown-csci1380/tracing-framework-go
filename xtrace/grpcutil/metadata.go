@@ -38,19 +38,19 @@ func GRPCMetadata() []string {
 func GRPCRecieved(md map[string][]string, msg string) {
 	event_strs, ok := md[EVENT_KEY]
 	if !ok || len(event_strs) < 1 {
-		fmt.Fprintf(os.Stderr, "bad metadata: %v\n", md)
+		client.Log(msg)
 		return
 	}
 	events := getIDs(md[EVENT_KEY][0])
 
 	task_strs, ok := md[TASK_KEY]
 	if !ok || len(task_strs) < 1 {
-		fmt.Fprintf(os.Stderr, "bad metadata: %v\n", md)
+		client.Log(msg)
 		return
 	}
 	taskID, err := strconv.ParseInt(task_strs[0], 10, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "bad metadata: %v\n", md)
+		client.Log(msg)
 		return
 	}
 
@@ -63,19 +63,19 @@ func GRPCRecieved(md map[string][]string, msg string) {
 func GRPCReturned(md map[string][]string, msg string) {
 	event_strs, ok := md[EVENT_KEY]
 	if !ok || len(event_strs) < 1 {
-		fmt.Fprintf(os.Stderr, "bad metadata: %v\n", md)
+		client.Log(msg)
 		return
 	}
 	events := getIDs(md[EVENT_KEY][0])
 
 	task_strs, ok := md[TASK_KEY]
 	if !ok || len(task_strs) < 1 {
-		fmt.Fprintf(os.Stderr, "bad metadata: %v\n", md)
+		client.Log(msg)
 		return
 	}
 	taskID, err := strconv.ParseInt(task_strs[0], 10, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "bad metadata: %v\n", md)
+		client.Log(msg)
 		return
 	}
 
