@@ -32,6 +32,6 @@ var XTraceClientInterceptor grpc.UnaryClientInterceptor = func(ctx context.Conte
 	xtr.Logf("Calling %s, arg: %v", method, req)
 	var md metadata.MD
 	err := invoker(metadata.NewContext(ctx, metadata.Pairs(GRPCMetadata()...)), method, req, reply, cc, append(opts, grpc.Header(&md))...)
-	GRPCReturned(md, fmt.Sprintf("Returned from remote %s, error: %s, value: %v", method, err.Error(), reply))
+	GRPCReturned(md, fmt.Sprintf("Returned from remote %s, error: %v, value: %v", method, err, reply))
 	return err
 }
