@@ -2,7 +2,7 @@ package grpcutil
 
 import (
 	"fmt"
-	xtr "github.com/crotger/tracing-framework-go/xtrace/client"
+	xtr "github.com/brown-csci1380/tracing-framework-go/xtrace/client"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/crotger/tracing-framework-go/xtrace/client/internal"
-	"github.com/crotger/tracing-framework-go/xtrace/internal/pubsub"
+	"github.com/brown-csci1380/tracing-framework-go/xtrace/client/internal"
+	"github.com/brown-csci1380/tracing-framework-go/xtrace/internal/pubsub"
 	"github.com/golang/protobuf/proto"
 )
 
