@@ -1,9 +1,7 @@
 package grpcutil
 
 import (
-	"fmt"
 	"github.com/crotger/tracing-framework-go/xtrace/client"
-	"os"
 	"strconv"
 	"strings"
 )
