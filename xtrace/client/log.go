@@ -19,10 +19,16 @@ var defaultLogLocation *log.Logger
 // Connect initializes a connection to the X-Trace
 // server. Connect must be called (and must complete
 // successfully) before Log can be called.
-func Connect(server string) error {
-	var err error
-	client, err = pubsub.NewClient(server)
-	return err
+func Connect(server string) (err error) {
+	if client == nil {
+		client, err = pubsub.NewClient(server)
+	}
+	return
+}
+
+func Disconnect() {
+	client.Close()
+	client = nil
 }
 
 var topic = []byte("xtrace")
