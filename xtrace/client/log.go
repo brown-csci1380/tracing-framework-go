@@ -31,6 +31,7 @@ func Connect(server string) (err error) {
 	return
 }
 
+// Disconnect removes the existing connection to the X-Trace server
 func Disconnect() {
 	client.Close()
 	client = nil
