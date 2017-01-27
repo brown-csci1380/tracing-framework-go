@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -14,7 +13,13 @@ import (
 
 var client *pubsub.Client
 
-var defaultLogLocation *log.Logger
+type Printer interface {
+	Print(...interface{})
+	Println(...interface{})
+	Printf(string, ...interface{})
+}
+
+var defaultLogLocation Printer
 
 // Connect initializes a connection to the X-Trace
 // server. Connect must be called (and must complete
@@ -34,7 +39,7 @@ func Disconnect() {
 var topic = []byte("xtrace")
 var processName = strings.Join(os.Args, " ")
 
-func SetFallbackLogger(l *log.Logger) {
+func SetFallbackLogger(l Printer) {
 	defaultLogLocation = l
 }
 
