@@ -11,15 +11,13 @@ import (
 	"go/printer"
 	"go/token"
 	"os"
+	"runtime"
 )
 
 var localFieldName = "local"
 
 func modifyRuntime2dotGo() {
-	goroot, exists := os.LookupEnv("GOROOT")
-	if !exists {
-		goroot = "/usr/local/go"
-	}
+	goroot := runtime.GOROOT()
 	path := goroot + "/src/runtime/runtime2.go"
 
 	fset := token.NewFileSet()
