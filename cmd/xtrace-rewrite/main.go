@@ -48,7 +48,10 @@ func packageDir(dir string) {
 	}
 
 	for _, inf := range infos {
-		if !inf.IsDir() && strings.HasSuffix(inf.Name(), ".go") && !strings.HasSuffix(inf.Name(), "_local.go") {
+		if !inf.IsDir() && strings.HasSuffix(inf.Name(), ".go") &&
+			!strings.HasSuffix(inf.Name(), "_test.go") &&
+			(!strings.HasSuffix(inf.Name(), fileSuffix) &&
+				!strings.HasPrefix(inf.Name(), filePrefix)) {
 			fmt.Println(inf.Name())
 			files = append(files, filepath.Join(dir, inf.Name()))
 		}
