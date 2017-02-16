@@ -49,7 +49,7 @@ func GetChannelSender(channel interface{}) []int64 {
 }
 
 // called by the sender of a value over a channel BEFORE sending the value.
-// Informs the future recipient of the value which event ID it originated from
+// Informs the future recipient of the value which event ID it originated from.
 func SendChannelEvent(channel interface{}) {
 	rcLock.Lock()
 	defer rcLock.Unlock()

@@ -31,6 +31,7 @@ func init() {
 		func(l interface{}) interface{} {
 			// deep copy l
 			n := *(l.(*localStorage))
+			n.redundancies = []int64{}
 			return &n
 		},
 	})

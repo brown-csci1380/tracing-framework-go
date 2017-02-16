@@ -2,8 +2,10 @@ package client
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/brown-csci1380/tracing-framework-go/xtrace/client/internal"
@@ -13,50 +15,61 @@ import (
 
 var client *pubsub.Client
 
-type Printer interface {
-	Print(...interface{})
-	Println(...interface{})
-	Printf(string, ...interface{})
-}
+var connectOnce sync.Once = sync.Once{}
+var disconnectOnce sync.Once = sync.Once{}
 
-var defaultLogLocation Printer
+var DefaultServerString string = "localhost:5563"
 
 // Connect initializes a connection to the X-Trace
 // server. Connect must be called (and must complete
 // successfully) before Log can be called.
 func Connect(server string) (err error) {
-	if client == nil {
+	connectOnce.Do(func() {
 		client, err = pubsub.NewClient(server)
-	}
+		if err != nil {
+			client = nil
+		}
+	})
 	return
 }
 
 // Disconnect removes the existing connection to the X-Trace server
 func Disconnect() {
-	client.Close()
-	client = nil
+	disconnectOnce.Do(func() {
+		if client != nil {
+			client.Close()
+			client = nil
+		}
+	})
+}
+
+type xtraceWriter struct{}
+
+func (x xtraceWriter) Write(p []byte) (n int, err error) {
+	Log(string(p))
+	return len(p), nil
+}
+
+func MakeWriter(wrapped ...io.Writer) io.Writer {
+	return io.MultiWriter(append(wrapped, xtraceWriter{})...)
 }
 
 var topic = []byte("xtrace")
 var processName = strings.Join(os.Args, " ")
 
-func SetFallbackLogger(l Printer) {
-	defaultLogLocation = l
-}
+var pnameOnce = sync.Once{}
 
 func SetProcessName(pname string) {
-	processName = pname
+	pnameOnce.Do(func() {
+		processName = pname
+	})
 }
 
 // Log a given message with the extra preceding events given
 // adds a ParentEventId for all precedingEvents _in addition_ to the recorded parent of this event
 func LogRedundancies(str string, precedingEvents []int64) {
 	if client == nil {
-		if defaultLogLocation != nil {
-			// if given a default location, log to there
-			defaultLogLocation.Println("xtrace (task:", GetTaskID(), "): Logged with no connection:", str, "events:", precedingEvents)
-		}
-		//else fail silently
+		//fail silently
 		return
 	}
 
