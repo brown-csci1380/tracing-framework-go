@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	fileSuffix = "_local.go"
-	buildTag   = "local"
+	fileSuffix = "_xtrace.go"
+	buildTag   = "xtrace"
 	filePrefix = "x_"
 )
 
