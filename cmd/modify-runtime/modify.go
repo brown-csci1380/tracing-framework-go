@@ -103,10 +103,7 @@ func SetLocal(local interface{}) {
 
 func addMethodsToRuntime() {
 	fmt.Print("Creating local access methods...")
-	goroot, exists := os.LookupEnv("GOROOT")
-	if !exists {
-		goroot = "/usr/local/go"
-	}
+	goroot, exists := runtime.GOROOT()
 	path := goroot + "/src/runtime/" + localFieldName + ".go"
 	newfile, err := os.Create(path)
 	if err != nil {
