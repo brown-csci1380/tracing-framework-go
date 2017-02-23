@@ -6,7 +6,6 @@ import (
 	"go/ast"
 	"go/format"
 	"go/parser"
-	"go/printer"
 	"go/token"
 	"go/types"
 	"io/ioutil"
@@ -41,10 +40,21 @@ func packageDir(dir string) {
 	conf.ParserMode = parser.ParseComments
 	files := []string{}
 
-	infos, err := ioutil.ReadDir(dir)
+	f, err := os.Stat(dir)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "could not load directory: ", err)
+		fmt.Fprintln(os.Stderr, "could not load file/directory: ", err)
 		os.Exit(1)
+	}
+	var infos []os.FileInfo
+	if f.IsDir() {
+		infos, err = ioutil.ReadDir(dir)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "could not load directory: ", err)
+			os.Exit(1)
+		}
+	} else {
+		infos = []os.FileInfo{f}
+		dir = filepath.Dir(dir)
 	}
 
 	for _, inf := range infos {
@@ -98,55 +108,60 @@ func packageDir(dir string) {
 
 		fmt.Println(prog.Fset.Position(f.Pos()).Filename)
 
-		origHasBuildTag := false
+		// origHasBuildTag := false
 
-		for _, c := range f.Comments {
-			for _, c := range c.List {
-				if c.Text == "// +build !"+buildTag {
-					c.Text = "// +build " + buildTag
-					origHasBuildTag = true
-				}
-			}
-		}
+		// for _, c := range f.Comments {
+		// 	for _, c := range c.List {
+		// 		if c.Text == "// +build !"+buildTag {
+		// 			c.Text = "// +build " + buildTag
+		// 			origHasBuildTag = true
+		// 		}
+		// 	}
+		// }
 
+		// var buf bytes.Buffer
+		// if origHasBuildTag {
+		// 	printer.Fprint(&buf, prog.Fset, f)
+		// } else {
+		// 	buf.Write([]byte("// +build " + buildTag + "\n\n"))
+		// 	printer.Fprint(&buf, prog.Fset, f)
+
+		// 	// prepend build comment to original file
+		// 	b, err := ioutil.ReadFile(fpath)
+		// 	if err != nil {
+		// 		fmt.Fprintf(os.Stderr, "could not read source file: %v\n", err)
+		// 		os.Exit(2)
+		// 	}
+		// 	b = append([]byte("// +build !"+buildTag+"\n\n"), b...)
+		// 	b, err = format.Source(b)
+		// 	if err != nil {
+		// 		fmt.Fprintf(os.Stderr, "could not format source file %v: %v\n", filepath.Base(fpath), err)
+		// 		os.Exit(2)
+		// 	}
+		// 	f, err := os.OpenFile(fpath, os.O_WRONLY, 0)
+		// 	if err != nil {
+		// 		fmt.Fprintf(os.Stderr, "could not open source file for writing: %v\n", err)
+		// 		os.Exit(2)
+		// 	}
+		// 	if _, err = f.Write(b); err != nil {
+		// 		fmt.Fprintf(os.Stderr, "could not write to source file: %v\n", err)
+		// 		os.Exit(2)
+		// 	}
+		// }
 		var buf bytes.Buffer
-		fpath := prog.Fset.Position(f.Pos()).Filename
-		if origHasBuildTag {
-			printer.Fprint(&buf, prog.Fset, f)
-		} else {
-			buf.Write([]byte("// +build " + buildTag + "\n\n"))
-			printer.Fprint(&buf, prog.Fset, f)
-
-			// prepend build comment to original file
-			b, err := ioutil.ReadFile(fpath)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "could not read source file: %v\n", err)
-				os.Exit(2)
-			}
-			b = append([]byte("// +build !"+buildTag+"\n\n"), b...)
-			b, err = format.Source(b)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "could not format source file %v: %v\n", filepath.Base(fpath), err)
-				os.Exit(2)
-			}
-			f, err := os.OpenFile(fpath, os.O_WRONLY, 0)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "could not open source file for writing: %v\n", err)
-				os.Exit(2)
-			}
-			if _, err = f.Write(b); err != nil {
-				fmt.Fprintf(os.Stderr, "could not write to source file: %v\n", err)
-				os.Exit(2)
-			}
-		}
-
-		b, err := format.Source(buf.Bytes())
+		err = format.Node(&buf, prog.Fset, f)
 		if err != nil {
 			panic(fmt.Errorf("unexpected internal error: %v", err))
 		}
-		dir, filename := filepath.Split(fpath)
-		fpath = filepath.Join(dir, filePrefix+filename[:len(filename)-3]+fileSuffix)
-		if err = ioutil.WriteFile(fpath, b, 0664); err != nil {
+
+		fpath := prog.Fset.Position(f.Pos()).Filename
+		info, err := os.Stat(fpath)
+		var mode os.FileMode = 0664
+		if err == nil {
+			mode = info.Mode()
+		}
+
+		if err = ioutil.WriteFile(fpath, buf.Bytes(), mode); err != nil {
 			fmt.Fprintf(os.Stderr, "could not create instrument source file: %v\n", err)
 			os.Exit(2)
 		}

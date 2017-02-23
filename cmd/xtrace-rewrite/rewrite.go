@@ -15,6 +15,7 @@ import (
 )
 
 var localImportName = "__local"
+var xtrImportName = "xtr"
 
 func rewriteGos(fset *token.FileSet, info types.Info, qual types.Qualifier, f *ast.File) (changed bool, err error) {
 	rname := runtimeName(f)
@@ -30,8 +31,10 @@ func rewriteGos(fset *token.FileSet, info types.Info, qual types.Qualifier, f *a
 	})
 	if changed {
 		// astutil.AddNamedImport(fset, f, rname, "runtime")
-		astutil.AddNamedImport(fset, f, localImportName, "github.com/brown-csci1380/tracing-framework-go/local")
+		// astutil.AddNamedImport(fset, f, localImportName, "github.com/brown-csci1380/tracing-framework-go/local")
 		// astutil.AddImport(fset, f, "runtime")
+		astutil.AddNamedImport(fset, f, xtrImportName, "github.com/brown-csci1380/tracing-framework-go/xtrace/client")
+
 	}
 	return changed, err
 }
@@ -130,12 +133,29 @@ func rewriteGoStmt(fset *token.FileSet, info types.Info, qual types.Qualifier, r
 		Typ                           string
 		Imp                           string
 		DefArgs, InnerArgs, OuterArgs []string
+		ReplaceDots                   func(string) string
+		WithDots                      func(string) string
 	}
 
 	arg.Runtime = rname
 	arg.Func = nodeString(fset, g.Call.Fun)
 	arg.Typ = types.TypeString(ftyp, qual)
-	arg.Imp = localImportName
+	arg.Imp = xtrImportName
+
+	arg.ReplaceDots = func(in string) string {
+		if len(in) > 3 && in[len(in)-3:] == "..." {
+			return in[:len(in)-3]
+		}
+		return in
+	}
+
+	arg.WithDots = func(in string) (s string) {
+		s = ""
+		if len(in) > 3 && in[len(in)-3:] == "..." {
+			s = s + "..."
+		}
+		return
+	}
 
 	params := sig.Params()
 	for i := 0; i < params.Len(); i++ {
@@ -161,11 +181,12 @@ func rewriteGoStmt(fset *token.FileSet, info types.Info, qual types.Qualifier, r
 	}
 
 	var buf bytes.Buffer
-	err := goTmpl.Execute(&buf, arg)
+	err := goTmplAlt.Execute(&buf, arg)
 	if err != nil {
 		panic(fmt.Errorf("internal error: %v", err))
 	}
-	return parseStmts(string(buf.Bytes())), nil
+
+	return parseStmts(buf.String()), nil
 }
 
 var goTmpl = template.Must(template.New("").Parse(`
@@ -173,6 +194,16 @@ go func(__f1 func(), __f2 {{.Typ}} {{range .DefArgs}},{{.}}{{end}}){
 	__f1()
 	__f2({{range .InnerArgs}}{{.}},{{end}})
 }({{.Imp}}.GetSpawnCallback(), {{.Func}}{{range .OuterArgs}},{{.}}{{end}})
+`))
+
+var goTmplAlt = template.Must(template.New("").Parse(`
+{
+	{{range $index, $name := .OuterArgs}}arg{{$index}} := {{call $.ReplaceDots $name}}
+	{{end}}
+	{{.Imp}}.XGo(func(){
+		{{.Func}}({{range $index, $name := .OuterArgs}}arg{{$index}}{{call $.WithDots $name}},{{end}})
+	})
+}
 `))
 
 func parseStmts(src string) []ast.Stmt {
@@ -231,7 +262,7 @@ func nodeString(fset *token.FileSet, node interface{}) string {
 	if err != nil {
 		panic(fmt.Errorf("unexpected internal error: %v", err))
 	}
-	return string(buf.Bytes())
+	return buf.String()
 }
 
 func qualifierForFile(pkg *types.Package, f *ast.File) types.Qualifier {
