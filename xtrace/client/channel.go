@@ -26,7 +26,7 @@ func RegisterChannelReciever(channel interface{}) (ch chan int64) {
 
 // Convenience method. Get the event id of the last sender in the channel, and
 // add it to the local store of redundant edges
-func AddChannelEvent(channel interface{}) {
+func ReadChannelEvent(channel interface{}) {
 	redund := GetChannelSender(channel)
 	AddRedundancies(redund...)
 }
