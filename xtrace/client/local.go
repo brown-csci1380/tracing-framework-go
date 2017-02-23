@@ -37,6 +37,15 @@ func init() {
 	})
 }
 
+// Runs the given function in a new goroutine, but copies the
+// local vars from the current goroutine first.
+func XGo(f func()) {
+	go func(f1 func(), f2 func()) {
+		f1()
+		f2()
+	}(local.GetSpawnCallback(), f)
+}
+
 func getLocal() *localStorage {
 	return local.GetLocal(token).(*localStorage)
 }
