@@ -11,7 +11,8 @@ import (
 
 // Handles propagation of x-trace metadata around grpc server requests (as the ServerOption to grpc.NewServer)
 var XTraceServerInterceptor grpc.UnaryServerInterceptor = func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	md, ok := metadata.FromContext(ctx)
+	md, ok := metadata.FromIncomingContext(ctx)
+	//md, ok := metadata.FromContext(ctx)
 	if !ok {
 		fmt.Fprintln(os.Stderr, "no metadata in request context.")
 	}
@@ -29,7 +30,7 @@ var XTraceServerInterceptor grpc.UnaryServerInterceptor = func(ctx context.Conte
 
 // Handles propagation of x-trace metadata around grpc server stream RPCs (as a ServerOption to grpc.NewServer)
 var XTraceStreamServerInterceptor grpc.StreamServerInterceptor = func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	md, ok := metadata.FromContext(ss.Context())
+	md, ok := metadata.FromIncomingContext(ss.Context())
 	if !ok {
 		fmt.Fprintln(os.Stderr, "no metadata in request context.")
 	}
@@ -49,7 +50,7 @@ var XTraceStreamServerInterceptor grpc.StreamServerInterceptor = func(srv interf
 var XTraceClientInterceptor grpc.UnaryClientInterceptor = func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	xtr.Logf("Calling %s, arg: %v", method, req)
 	var md metadata.MD
-	err := invoker(metadata.NewContext(ctx, metadata.Pairs(GRPCMetadata()...)), method, req, reply, cc, append(opts, grpc.Header(&md))...)
+	err := invoker(metadata.NewOutgoingContext(ctx, metadata.Pairs(GRPCMetadata()...)), method, req, reply, cc, append(opts, grpc.Header(&md))...)
 	GRPCReturned(md, fmt.Sprintf("Returned from remote %s, error: %v, value: %v", method, err, reply))
 	return err
 }
@@ -58,7 +59,7 @@ var XTraceClientInterceptor grpc.UnaryClientInterceptor = func(ctx context.Conte
 var XTraceStreamClientInterceptor grpc.StreamClientInterceptor = func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 	xtr.Logf("Calling %s, desc: %v", method, desc)
 	var md metadata.MD
-	cs, err := streamer(metadata.NewContext(ctx, metadata.Pairs(GRPCMetadata()...)), desc, cc, method, append(opts, grpc.Header(&md))...)
+	cs, err := streamer(metadata.NewOutgoingContext(ctx, metadata.Pairs(GRPCMetadata()...)), desc, cc, method, append(opts, grpc.Header(&md))...)
 	GRPCReturned(md, fmt.Sprintf("Recieved remote stream for %v: error: %v, stream: %v", method, err, cs))
 	return cs, err
 }
